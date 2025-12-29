@@ -1,21 +1,22 @@
+<% release_dir = if assigns[:release_dir], do: @release_dir, else: "/srv/#{@app}/release" %>
 [Unit]
 Description=<%= @app %> service
 After=local-fs.target network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/srv/<%= @app %>/release
+WorkingDirectory=<%= release_dir %>
 
 <%= if assigns[:custom_start_command] do %>
 ExecStart=<%= @custom_start_command %>
 <% else %>
-ExecStart=/srv/<%= @app %>/release/bin/<%= @app %> start
+ExecStart=<%= release_dir %>/bin/<%= @app %> start
 <% end %>
 
 <%= if assigns[:custom_stop_command] do %>
 ExecStop=<%= @custom_stop_command %>
 <% else %>
-ExecStop=/srv/<%= @app %>/release/bin/<%= @app %> stop
+ExecStop=<%= release_dir %>/bin/<%= @app %> stop
 <% end %>
 
 Environment=LANG=en_US.utf8

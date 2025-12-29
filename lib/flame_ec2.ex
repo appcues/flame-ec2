@@ -135,6 +135,12 @@ defmodule FlameEC2 do
   * `:key_name` - The name of the key pair to use for you to be able to connect to the instance.
   This is not required, however, an instance that was created without a key pair will be inaccessible without another way to log in.
 
+  * `:instance_initiated_shutdown_behavior` - The behavior when an instance-initiated shutdown is triggered.
+  Valid values are `"stop"` or `"terminate"`. Defaults to `"terminate"`.
+  When set to `"terminate"`, the instance and its EBS storage (including logs) are terminated on shutdown.
+  When set to `"stop"`, the instance is stopped but not terminated, allowing you to access the logs stored in the EBS volume.
+  This is useful for debugging issues in production by examining the logs after a runner shuts down.
+
   * `:instance_metadata_url` - The EC2 instance metadata URL. This is used when auto-configuring the pool with the `auto_configure` configuration set to `true`.
   Defaults to "http://169.254.169.254/latest/meta-data/" (note the trailing slash), which is the internal EC2 metadata URL.
   This can be adjusted for local testing, but likely does not need to be adjusted outside of this use case.
@@ -222,14 +228,17 @@ defmodule FlameEC2 do
         EC2Api.run_instances!(state)
       end)
 
-    Utils.log(state.config, "#{inspect(__MODULE__)} #{inspect(node())} EC2 instance created in #{req_connect_time}ms")
+    Utils.log(
+      state.config,
+      "#{inspect(__MODULE__)} #{inspect(node())} EC2 instance created in #{req_connect_time}ms"
+    )
 
     remaining_connect_window = state.config.boot_timeout - req_connect_time
 
     case resp do
       %{"instanceId" => instance_id, "privateIpAddress" => ip} ->
         new_state =
-          %BackendState{
+          %{
             state
             | runner_instance_id: instance_id,
               runner_instance_ip: ip
@@ -241,12 +250,14 @@ defmodule FlameEC2 do
               remote_terminator_pid
           after
             remaining_connect_window ->
-              Logger.error("failed to connect to EC2 instance within #{state.config.boot_timeout}ms")
+              Logger.error(
+                "failed to connect to EC2 instance within #{state.config.boot_timeout}ms"
+              )
 
               exit(:timeout)
           end
 
-        new_state = %BackendState{
+        new_state = %{
           new_state
           | remote_terminator_pid: remote_terminator_pid,
             runner_node_name: node(remote_terminator_pid)
@@ -261,7 +272,11 @@ defmodule FlameEC2 do
 
   @impl true
   def handle_info(msg, %BackendState{} = state) do
-    Utils.log(state.config, "Missed message sent to FlameEC2 Process #{self()}: #{inspect(msg)}")
+    Utils.log(
+      state.config,
+      "Missed message sent to FlameEC2 Process #{inspect(self())}: #{inspect(msg)}"
+    )
+
     {:noreply, state}
   end
 end

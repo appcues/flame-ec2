@@ -23,20 +23,29 @@ defmodule FlameEC2.ConfigTest do
     assert config.instance_type == "t3.nano"
     assert config.launch_template_version == "$Default"
     assert config.boot_timeout == 120_000
+    assert config.instance_initiated_shutdown_behavior == "terminate"
   end
 
   test "s3 bundle compressed?" do
     config =
       FlameEC2.Config.new(
-        Keyword.put(FlameEC2.QuickConfigs.simple_valid_config(), :s3_bundle_url, "s3://code-bucket/code"),
+        Keyword.put(
+          FlameEC2.QuickConfigs.simple_valid_config(),
+          :s3_bundle_url,
+          "s3://code-bucket/code"
+        ),
         []
       )
 
-    assert not config.s3_bundle_compressed?
+    refute config.s3_bundle_compressed?
 
     config =
       FlameEC2.Config.new(
-        Keyword.put(FlameEC2.QuickConfigs.simple_valid_config(), :s3_bundle_url, "s3://code-bucket/code.tar.gz"),
+        Keyword.put(
+          FlameEC2.QuickConfigs.simple_valid_config(),
+          :s3_bundle_url,
+          "s3://code-bucket/code.tar.gz"
+        ),
         []
       )
 
@@ -45,9 +54,43 @@ defmodule FlameEC2.ConfigTest do
 
   test "environment variables" do
     env = %{"MY_ENV_1" => "123", "MY_ENV_2" => "456", "MY_ENV_3" => "789"}
-    config = FlameEC2.Config.new(Keyword.put(FlameEC2.QuickConfigs.simple_valid_config(), :env, env), [])
+
+    config =
+      FlameEC2.Config.new(Keyword.put(FlameEC2.QuickConfigs.simple_valid_config(), :env, env), [])
 
     assert config.env == env
+  end
+
+  test "instance initiated shutdown behavior" do
+    # Test default value
+    config = FlameEC2.Config.new(FlameEC2.QuickConfigs.simple_valid_config(), [])
+    assert config.instance_initiated_shutdown_behavior == "terminate"
+
+    # Test custom value "stop"
+    config =
+      FlameEC2.Config.new(
+        Keyword.put(
+          FlameEC2.QuickConfigs.simple_valid_config(),
+          :instance_initiated_shutdown_behavior,
+          "stop"
+        ),
+        []
+      )
+
+    assert config.instance_initiated_shutdown_behavior == "stop"
+
+    # Test custom value "terminate"
+    config =
+      FlameEC2.Config.new(
+        Keyword.put(
+          FlameEC2.QuickConfigs.simple_valid_config(),
+          :instance_initiated_shutdown_behavior,
+          "terminate"
+        ),
+        []
+      )
+
+    assert config.instance_initiated_shutdown_behavior == "terminate"
   end
 
   describe "instance creation details" do
@@ -55,7 +98,10 @@ defmodule FlameEC2.ConfigTest do
       assert_raise ArgumentError,
                    "You must specify either the image_id or the launch_template_id for the FlameEC2 backend",
                    fn ->
-                     FlameEC2.Config.new(Keyword.delete(FlameEC2.QuickConfigs.simple_valid_config(), :image_id), [])
+                     FlameEC2.Config.new(
+                       Keyword.delete(FlameEC2.QuickConfigs.simple_valid_config(), :image_id),
+                       []
+                     )
                    end
 
       with_launch_template =
@@ -84,7 +130,10 @@ defmodule FlameEC2.ConfigTest do
     for key <- must_specify_keys do
       test "no #{key} is invalid" do
         assert_raise ArgumentError, ~r/^You must specify/, fn ->
-          FlameEC2.Config.new(Keyword.delete(FlameEC2.QuickConfigs.simple_valid_config(), unquote(key)), [])
+          FlameEC2.Config.new(
+            Keyword.delete(FlameEC2.QuickConfigs.simple_valid_config(), unquote(key)),
+            []
+          )
         end
       end
     end

@@ -23,6 +23,8 @@ defmodule FlameEC2.Config do
     :boot_timeout,
     :app,
     :s3_bundle_url,
+    :release_dir,
+    :instance_initiated_shutdown_behavior,
     :instance_metadata_url,
     :instance_metadata_token_url,
     :ec2_service_endpoint,
@@ -47,6 +49,8 @@ defmodule FlameEC2.Config do
              :app,
              :s3_bundle_url,
              :s3_bundle_compressed?,
+             :release_dir,
+             :instance_initiated_shutdown_behavior,
              :local_ip
            ]}
 
@@ -66,6 +70,8 @@ defmodule FlameEC2.Config do
             app: nil,
             s3_bundle_url: nil,
             s3_bundle_compressed?: false,
+            release_dir: nil,
+            instance_initiated_shutdown_behavior: nil,
             local_ip: nil,
             instance_metadata_url: nil,
             instance_metadata_token_url: nil,
@@ -78,6 +84,7 @@ defmodule FlameEC2.Config do
       launch_template_version: "$Default",
       boot_timeout: 120_000,
       app: System.get_env("RELEASE_NAME"),
+      instance_initiated_shutdown_behavior: "terminate",
       instance_metadata_url: "http://169.254.169.254/latest/meta-data/",
       instance_metadata_token_url: "http://169.254.169.254/latest/api/token",
       ec2_service_endpoint: "https://ec2.amazonaws.com/"
@@ -164,7 +171,7 @@ defmodule FlameEC2.Config do
   end
 
   defp validate_s3_bundle_url!(%Config{} = config) do
-    %Config{config | s3_bundle_compressed?: String.ends_with?(config.s3_bundle_url, ".tar.gz")}
+    %{config | s3_bundle_compressed?: String.ends_with?(config.s3_bundle_url, ".tar.gz")}
   end
 
   defp validate_local_ip!(%Config{local_ip: nil}) do
@@ -180,11 +187,15 @@ defmodule FlameEC2.Config do
           "You must specify either the image_id or the launch_template_id for the FlameEC2 backend"
   end
 
-  defp validate_instance_creation_details!(%Config{image_id: _image_id, launch_template_id: nil} = config) do
+  defp validate_instance_creation_details!(
+         %Config{image_id: _image_id, launch_template_id: nil} = config
+       ) do
     config
   end
 
-  defp validate_instance_creation_details!(%Config{image_id: nil, launch_template_id: _launch_template_id} = config) do
+  defp validate_instance_creation_details!(
+         %Config{image_id: nil, launch_template_id: _launch_template_id} = config
+       ) do
     config
   end
 

@@ -1,10 +1,12 @@
 defmodule FlameEC2.MixProject do
   use Mix.Project
 
+  @version "1.1.0-rc.1"
+
   def project do
     [
       app: :flame_ec2,
-      version: "1.0.0",
+      version: @version,
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_path(Mix.env()),
@@ -22,8 +24,13 @@ defmodule FlameEC2.MixProject do
       aliases: aliases(),
       docs: docs(),
       dialyzer: [plt_file: {:no_warn, "priv/plts/dialyzer.plt"}, plt_add_deps: :app_tree],
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: [
+      test_coverage: [tool: ExCoveralls]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
         ci: :test,
         coveralls: :test,
         "coveralls.detail": :test,

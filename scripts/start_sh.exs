@@ -1,5 +1,7 @@
 systemd_service = FlameEC2.Templates.systemd_service(app: "flame_ec2")
-env = FlameEC2.Templates.env(vars: %{"MY_ENV_1" => "1234", "MY_ENV_2" => "5678", "MY_ENV_3" => "90"})
+
+env =
+  FlameEC2.Templates.env(vars: %{"MY_ENV_1" => "1234", "MY_ENV_2" => "5678", "MY_ENV_3" => "90"})
 
 rendered =
   FlameEC2.Templates.start_script(

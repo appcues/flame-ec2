@@ -31,7 +31,6 @@ defmodule FlameEC2.EC2Api do
           form: params,
           aws_sigv4: Map.put_new(credentials, :service, "ec2")
         ]
-        |> Req.new()
         |> Req.request()
         |> raise_or_response!()
         |> Map.fetch!(:body)
@@ -71,7 +70,9 @@ defmodule FlameEC2.EC2Api do
   end
 
   defp params_from_config(%Config{} = config, env) do
-    systemd_service = Templates.systemd_service(app: config.app)
+    systemd_service =
+      Templates.systemd_service(app: config.app, release_dir: config.release_dir)
+
     env = Templates.env(vars: env)
 
     start_script =
@@ -81,7 +82,8 @@ defmodule FlameEC2.EC2Api do
         env: env,
         aws_region: config.aws_region,
         s3_bundle_url: config.s3_bundle_url,
-        s3_bundle_compressed?: config.s3_bundle_compressed?
+        s3_bundle_compressed?: config.s3_bundle_compressed?,
+        release_dir: config.release_dir
       )
 
     base_params = %{
@@ -104,7 +106,7 @@ defmodule FlameEC2.EC2Api do
       "IamInstanceProfile" => %{
         "Arn" => config.iam_instance_profile
       },
-      "InstanceInitiatedShutdownBehavior" => "terminate",
+      "InstanceInitiatedShutdownBehavior" => config.instance_initiated_shutdown_behavior,
       "UserData" => Base.encode64(start_script)
     }
 
@@ -121,7 +123,8 @@ defmodule FlameEC2.EC2Api do
     }
   end
 
-  defp creation_details_params(%Config{image_id: image_id}) when is_binary(image_id) and image_id != "" do
+  defp creation_details_params(%Config{image_id: image_id})
+       when is_binary(image_id) and image_id != "" do
     %{
       "ImageId" => image_id
     }
