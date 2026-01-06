@@ -44,7 +44,7 @@ defmodule FlameEC2.BackendStateTest do
 
     parent = FLAME.Parent.get()
 
-    assert not is_nil(parent)
+    assert parent
     assert is_struct(parent, FLAME.Parent)
     assert parent.ref == state.parent_ref
     assert parent.node_base == state.runner_node_base

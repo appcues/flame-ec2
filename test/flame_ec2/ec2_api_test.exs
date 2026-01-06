@@ -62,6 +62,30 @@ defmodule FlameEC2.EC2ApiTest do
     assert decoded == start_script
   end
 
+  test "includes InstanceInitiatedShutdownBehavior with default value" do
+    config = FlameEC2.QuickConfigs.simple_valid_config()
+    state = FlameEC2.BackendState.new(config, [])
+
+    parsed = FlameEC2.EC2Api.build_params_from_state(state)
+
+    assert parsed["InstanceInitiatedShutdownBehavior"] == "terminate"
+  end
+
+  test "includes InstanceInitiatedShutdownBehavior with custom value" do
+    config =
+      Keyword.put(
+        FlameEC2.QuickConfigs.simple_valid_config(),
+        :instance_initiated_shutdown_behavior,
+        "stop"
+      )
+
+    state = FlameEC2.BackendState.new(config, [])
+
+    parsed = FlameEC2.EC2Api.build_params_from_state(state)
+
+    assert parsed["InstanceInitiatedShutdownBehavior"] == "stop"
+  end
+
   test "correct query parameters with launch template in state" do
     config =
       FlameEC2.QuickConfigs.simple_valid_config()
@@ -75,7 +99,7 @@ defmodule FlameEC2.EC2ApiTest do
 
     assert parsed["LaunchTemplate.LaunchTemplateId"] == "lt-123"
     assert parsed["LaunchTemplate.Version"] == "1"
-    assert not Map.has_key?(parsed, "ImageId")
+    refute Map.has_key?(parsed, "ImageId")
   end
 
   test "successfully launches an instance", context do
@@ -92,8 +116,10 @@ defmodule FlameEC2.EC2ApiTest do
         []
       )
 
-    assert %{"instanceId" => _instance_id, "privateIpAddress" => ip} = FlameEC2.EC2Api.run_instances!(state)
+    assert %{"instanceId" => _instance_id, "privateIpAddress" => ip} =
+             FlameEC2.EC2Api.run_instances!(state)
 
-    assert List.delete_at(String.split(context[:local_ipv4], "."), 3) == List.delete_at(String.split(ip, "."), 3)
+    assert List.delete_at(String.split(context[:local_ipv4], "."), 3) ==
+             List.delete_at(String.split(ip, "."), 3)
   end
 end

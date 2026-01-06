@@ -20,7 +20,7 @@ defmodule FlameEC2.QuickConfigs do
       |> AWS.Client.create("xxxxxxxxxxxx", "xxxxxxxxxxxx", "us-east-1")
       |> AWS.Client.put_endpoint("localhost")
       |> then(fn client ->
-        %AWS.Client{client | port: 4566, proto: "http"}
+        %{client | port: 4566, proto: "http"}
       end)
 
     {:ok, %{"CreateVpcResponse" => %{"vpc" => %{"vpcId" => vpc_id}}}, _} =

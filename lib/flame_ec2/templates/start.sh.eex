@@ -70,8 +70,23 @@ install_aws_cli() {
         return 0
     fi
 
-    log "Installing AWS CLI..."
-    curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    # Detect architecture
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64)
+            AWS_CLI_ARCH="x86_64"
+            ;;
+        aarch64|arm64)
+            AWS_CLI_ARCH="aarch64"
+            ;;
+        *)
+            log "Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+    esac
+
+    log "Installing AWS CLI for architecture: $AWS_CLI_ARCH..."
+    curl -s "https://awscli.amazonaws.com/awscli-exe-linux-${AWS_CLI_ARCH}.zip" -o "awscliv2.zip"
     unzip -q awscliv2.zip
     ./aws/install --update >/dev/null 2>&1
     rm -rf aws awscliv2.zip
@@ -94,7 +109,11 @@ aws configure set default.region <%= @aws_region %>
 S3_URL=<%= @s3_bundle_url %>
 APP_DIR="/srv/<%= @app %>"
 SERVICE_NAME=<%= @app %>
+<%= if assigns[:release_dir] do %>
+RELEASE_DIR="<%= @release_dir %>"
+<% else %>
 RELEASE_DIR="${APP_DIR}/release"
+<% end %>
 
 mkdir -p "${APP_DIR}" "${RELEASE_DIR}" || {
     log "Failed to create required directories"
